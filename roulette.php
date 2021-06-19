@@ -1,34 +1,14 @@
 <?php
 
 session_start();
+require('database.php');
 
-if (isset($_GET['code'])) {
-	$client_id = 'b778a71020a884e58fa30b3d0d18760ab57729728ff96ba6fb2b689bfd5c5be9';
-	$client_secret = '4fd2b575ddaa28c7edc9b340c3eacae39fce9af62d1ecd392e4297dc497aa668';
-	$redirect_uri= "http://localhost:8888/roulette/roulette.php";
-	$authorization_code = $_GET['code'];
-	$ch = curl_init();
+if (!isset($_SESSION['token']))
+	header('Location: index.php');
 
-	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-	curl_setopt($ch, CURLOPT_URL, 'https://api.intra.42.fr/oauth/token');
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=authorization_code&code=$authorization_code&redirect_uri=$redirect_uri&client_id=$client_id&client_secret=$client_secret");
-	curl_setopt($ch, CURLOPT_POST, 1);
-
-	$headers = array();
-	$headers[] = 'Content-Type: application/x-www-form-urlencoded';
-	curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-	$result = curl_exec($ch);
-	if (curl_errno($ch)) {
-		echo 'Error:' . curl_error($ch);
-	}
-	curl_close ($ch);
-
-	$array = json_decode($result);
-	$access_token = $array->access_token;
-
-
+if (isset($_SESSION['token']))
+{
+	$access_token = $_SESSION['token'];
 
 	$ch = curl_init();
 
@@ -50,6 +30,45 @@ if (isset($_GET['code'])) {
 	if (isset($array->error))
 		show_404();
 	var_dump($array->login);
+	require('user_exists.php');
+}
+else
+{
+	if (isset($_GET['code'])) {
+		$client_id = 'b778a71020a884e58fa30b3d0d18760ab57729728ff96ba6fb2b689bfd5c5be9';
+		$client_secret = '4fd2b575ddaa28c7edc9b340c3eacae39fce9af62d1ecd392e4297dc497aa668';
+		$redirect_uri= "http://localhost:8888/roulette/roulette.php";
+		$authorization_code = $_GET['code'];
+		$ch = curl_init();
+	
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_URL, 'https://api.intra.42.fr/oauth/token');
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=authorization_code&code=$authorization_code&redirect_uri=$redirect_uri&client_id=$client_id&client_secret=$client_secret");
+		curl_setopt($ch, CURLOPT_POST, 1);
+	
+		$headers = array();
+		$headers[] = 'Content-Type: application/x-www-form-urlencoded';
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+	
+		$result = curl_exec($ch);
+		if (curl_errno($ch)) {
+			echo 'Error:' . curl_error($ch);
+		}
+		curl_close ($ch);
+	
+		$array = json_decode($result);
+		if (isset($array->error))
+				show_404();
+		else
+		{
+			session_unset();
+			session_destroy();
+			session_start();
+			$_SESSION['token'] = $array->access_token;
+			header('Location: /roulette/roulette.php');
+		}
+	}
 }
 ?>
 
