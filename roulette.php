@@ -4,7 +4,7 @@ session_start();
 require('database.php');
 
 if (!isset($_SESSION['token']))
-	header('Location: index.php');
+header('Location: index.php');
 
 if (isset($_SESSION['token']))
 {
@@ -27,9 +27,14 @@ if (isset($_SESSION['token']))
 	curl_close ($ch);
 	$array = json_decode($result);
 				
-	if (isset($array->error))
-		show_404();
-	var_dump($array->login);
+
+	if (isset($array->error)) {
+		session_unset();
+		session_destroy();
+		session_start();
+		header('Location: index.php');
+	}
+	//var_dump($array->login);
 	require('user_exists.php');
 }
 else
